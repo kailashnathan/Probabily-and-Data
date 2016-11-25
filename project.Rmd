@@ -1,0 +1,107 @@
+l---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+ 
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+The Behavioral Risk Factor Surveillance System (BRFSS) is a collaborative project between all of the states in the United States (US) and participating US territories and the Centers for Disease Control and Prevention (CDC).The BRFSS is a surveillance system for the uninstutionalised adult population in the US to measure risk factors .The data is collected through monthly phone interviews.The BRFSS objective is to collect uniform, state-specific data on preventive health practices and risk behaviors that are linked to chronic diseases, injuries, and preventable infectious diseases that affect the adult population. Factors assessed by the BRFSS in 2013 include tobacco use, HIV/AIDS knowledge and prevention, exercise, immunization, health status, healthy days - health-related quality of life, health care access, inadequate sleep, hypertension awareness, cholesterol awareness, chronic health conditions, alcohol consumption, fruits and vegetables consumption, arthritis burden, and seatbelt use. Since 2011, BRFSS conducts both landline telephone- and cellular telephone-based surveys. In conducting the BRFSS landline telephone survey, interviewers collect data from a randomly selected adult in a household. In conducting the cellular telephone version of the BRFSS questionnaire, interviewers collect data from an adult who participates by using a cellular telephone and resides in a private residence or college housing. 
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+Is there a relation between level of income and the inability to see a doctor due to cost?
+
+
+**Research quesion 2:**
+I would like to explore the connection between the number of hours of sleep and level of blood pressure,heartattack.
+Variables used are:
+sleptim1: How Much Time Do You Sleep
+cvdinfr4: Ever Diagnosed With Heart Attack
+bphigh4: Ever Told Blood Pressure High
+
+Corelation analysis among the variables.
+**Research quesion 3:**
+Lastly,Grouping the data by income level, people of which income segment have the most and the least health insurance coverage?
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+
+**Research quesion 1:**
+
+```{r}
+Inc_Doc_Tab <- table(brfss2013$income2, brfss2013$medcost, dnn = c("Income Level", "Doctor Visit"))
+
+addmargins(Inc_Doc_Tab)
+addmargins(prop.table(Inc_Doc_Tab, 1), 2)
+#We can see from the above table that
+#* About 29% of people with income below $10,000 have said that they were unable to visit a doctor due to cost
+#* This value gradually reduces to around 7% for people with more that $75,000 annual income
+ggplot(data = brfss2013, aes(x = income2, fill = medcost)) + geom_bar()
+```
+
+
+
+
+**Research quesion 2:**
+
+```{r}
+#subset
+vars <- names(brfss2013) %in% c("sleptim1", "cvdinfr4", "bphigh4")
+subdata<-brfss2013[vars]
+subdata$cvdinfr4 <- ifelse(subdata$cvdinfr4=="Yes", 1, 0)
+subdata$bphigh4 <- ifelse(subdata$bphigh4=="Yes", 1, 0)
+library(Hmisc)
+subdata<-na.delete(subdata)
+cor(subdata)
+library(corrplot)
+M <- cor(subdata)
+corrplot(M, method="ellipse")
+
+```
+This implies that
+1.Sleep time and Blood pressure has negative correlation, which mean if one sleeps less, chances for High blood go high (this is not a causation, but just an initial inference). 
+2. Sleep time and Ever Diagnosed With Heart Attack shows almost no relation among them (corerlation is almost zero)
+
+
+
+**Research quesion 3:**
+
+```{r}
+inc_hlth_tab <- table(brfss2013$income2, brfss2013$hlthpln1, dnn = c("Income Level", "Health Coverage"))
+addmargins(inc_hlth_tab)
+addmargins(prop.table(inc_hlth_tab,1), 2)
+ggplot(data = brfss2013, aes(x = income2, fill = hlthpln1)) + geom_bar()
+
+#* Among people with income above $75,000, 97.61% of them have health coverage, making them the segment with most health insurance coverage
+#* Among people with less than $10,000 annual income, 25.91% of them do not have coverage, making them the segment with least health insurance coverage.
